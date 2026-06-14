@@ -53,22 +53,31 @@ export async function POST(req) {
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }))
-
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${conv.model}:generateContent?key=${process.env.GOOGLE_AI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            ...geminiHistory,
-            { role: 'user', parts: [{ text: message }] },
-          ],
+          contents: [...geminiHistory, { role: 'user', parts: [{ text: message }] }],
         }),
       }
     )
     const data = await res.json()
     reply = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data)
+  }
+
+  else if (conv.model.startsWith('llama') || conv.model.startsWith('mixtral') || conv.model.startsWith('deepseek')) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: conv.model, messages: history }),
+    })
+    const data = await res.json()
+    reply = data.choices?.[0]?.message?.content || 'Sin respuesta'
   }
 
   conv.messages.push({ role: 'assistant', content: reply })
