@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation'
 
 const MODELS = [
   { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (gratis)' },
-  { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (gratis)' },
-  { id: 'deepseek-r1-distill-llama-70b', label: 'DeepSeek R1 (gratis)' },
-  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet' },
-  { id: 'gpt-4o', label: 'GPT-4o' },
 ]
 
 export default function ChatPage() {
