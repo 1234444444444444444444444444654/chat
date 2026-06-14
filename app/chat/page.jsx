@@ -4,8 +4,9 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 const MODELS = [
+  { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (gratis)' },
+  { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (gratis)' },
   { id: 'claude-sonnet-4-6', label: 'Claude Sonnet' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
   { id: 'gpt-4o', label: 'GPT-4o' },
   { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
 ]
