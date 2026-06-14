@@ -16,13 +16,9 @@ export async function POST(req) {
   const conv = await Conversation.findOne({ _id: conversationId, userId: session.user.id })
   if (!conv) return NextResponse.json({ error: 'Conversación no encontrada' }, { status: 404 })
 
-  // Añadir mensaje del usuario
   conv.messages.push({ role: 'user', content: message })
-
-  // Preparar historial para la IA (solo role + content)
   const history = conv.messages.map((m) => ({ role: m.role, content: m.content }))
 
-  // Llamar a la IA según el modelo
   let reply = ''
 
   if (conv.model.startsWith('claude')) {
@@ -33,11 +29,7 @@ export async function POST(req) {
         'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: conv.model,
-        max_tokens: 4096,
-        messages: history,
-      }),
+      body: JSON.stringify({ model: conv.model, max_tokens: 4096, messages: history }),
     })
     const data = await res.json()
     reply = data.content?.[0]?.text || 'Sin respuesta'
@@ -50,25 +42,42 @@ export async function POST(req) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: conv.model,
-        messages: history,
-      }),
+      body: JSON.stringify({ model: conv.model, messages: history }),
     })
     const data = await res.json()
     reply = data.choices?.[0]?.message?.content || 'Sin respuesta'
   }
 
-  // Guardar respuesta de la IA
+  else if (conv.model.startsWith('gemini')) {
+    const geminiHistory = history.slice(0, -1).map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }))
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${conv.model}:generateContent?key=${process.env.GOOGLE_AI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            ...geminiHistory,
+            { role: 'user', parts: [{ text: message }] },
+          ],
+        }),
+      }
+    )
+    const data = await res.json()
+    reply = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data)
+  }
+
   conv.messages.push({ role: 'assistant', content: reply })
   conv.updatedAt = new Date()
 
-  // Auto-título con el primer mensaje del usuario
   if (conv.messages.length === 2) {
     conv.title = message.slice(0, 50) + (message.length > 50 ? '...' : '')
   }
 
   await conv.save()
-
   return NextResponse.json({ reply })
 }
